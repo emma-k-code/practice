@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/francoispqt/gojay"
+
 	jsoniter "github.com/json-iterator/go"
 )
 
@@ -25,6 +27,15 @@ func BenchmarkJsonEncodeIter(b *testing.B) {
 	}
 }
 
+// 測試 gojay 的 json encode
+func BenchmarkJSONEncodeJay(b *testing.B) {
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		JSONEncodeJay()
+	}
+}
+
 // 測試原生 json decode
 func BenchmarkJsonDecodeStd(b *testing.B) {
 	b.ResetTimer()
@@ -43,6 +54,15 @@ func BenchmarkJsonDecodeIter(b *testing.B) {
 	}
 }
 
+// 測試 gojay 的 json decode
+func BenchmarkJsonDecodeJay(b *testing.B) {
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		JSONDecodeJay()
+	}
+}
+
 // 以下為測試使用
 type user struct {
 	Name string `json:user`
@@ -52,14 +72,14 @@ type user struct {
 
 func JSONEncodeStd() []byte {
 	u := user{"Emma", "https://www.google.com.tw/", "abc123"}
-	b, _ := json.MarshalIndent(u, "", "  ")
+	b, _ := json.Marshal(u)
 
 	return b
 }
 
 func JSONEncodeIter() []byte {
 	u := user{"Emma", "https://www.google.com.tw/", "abc123"}
-	b, _ := jsoniter.ConfigCompatibleWithStandardLibrary.MarshalIndent(u, "", "  ")
+	b, _ := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(u)
 
 	return b
 }
@@ -74,4 +94,17 @@ func JSONDecodeIter() error {
 	u := user{}
 	j := `{"user":"Emma","text":"https://www.google.com.tw/","note":"abc123"}`
 	return jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal([]byte(j), &u)
+}
+
+func JSONEncodeJay() []byte {
+	u := user{"Emma", "https://www.google.com.tw/", "abc123"}
+	b, _ := gojay.Marshal(u)
+
+	return b
+}
+
+func JSONDecodeJay() error {
+	u := user{}
+	j := `{"user":"Emma","text":"https://www.google.com.tw/","note":"abc123"}`
+	return gojay.Unmarshal([]byte(j), &u)
 }
