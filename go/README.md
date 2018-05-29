@@ -14,3 +14,6 @@ Go 相關練習
 > ```go
 > go test -bench=. -benchmem
 > ```
+
+## minesweeper
+將之前寫的 PHP 踩地雷用 Go 改寫
