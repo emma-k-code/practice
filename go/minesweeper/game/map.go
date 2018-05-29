@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// 建立遊戲地圖
+// CreateMap 建立遊戲地圖
 func CreateMap(row, column, m int) string {
 	// 空白的遊戲地圖
 	gameMap := make(map[int]map[int]int, row)
@@ -34,57 +34,57 @@ func CreateMap(row, column, m int) string {
 				// 上
 				if val, has := gameMap[h-1][w]; has {
 					if val == -1 {
-						gameMap[h][w] += 1
+						gameMap[h][w]++
 					}
 				}
 				// 下
 				if val, has := gameMap[h+1][w]; has {
 					if val == -1 {
-						gameMap[h][w] += 1
+						gameMap[h][w]++
 					}
 				}
 
 				// 左測上~下
 				if val, has := gameMap[h-1][w-1]; has {
 					if val == -1 {
-						gameMap[h][w] += 1
+						gameMap[h][w]++
 					}
 				}
 				if val, has := gameMap[h][w-1]; has {
 					if val == -1 {
-						gameMap[h][w] += 1
+						gameMap[h][w]++
 					}
 				}
 				if val, has := gameMap[h+1][w-1]; has {
 					if val == -1 {
-						gameMap[h][w] += 1
+						gameMap[h][w]++
 					}
 				}
 
 				// 右側上~下
 				if val, has := gameMap[h-1][w+1]; has {
 					if val == -1 {
-						gameMap[h][w] += 1
+						gameMap[h][w]++
 					}
 				}
 				if val, has := gameMap[h][w+1]; has {
 					if val == -1 {
-						gameMap[h][w] += 1
+						gameMap[h][w]++
 					}
 				}
 				if val, has := gameMap[h+1][w+1]; has {
 					if val == -1 {
-						gameMap[h][w] += 1
+						gameMap[h][w]++
 					}
 				}
 			}
 		}
 	}
 
-	return MapHtml(row, column, gameMap)
+	return MapHTML(row, column, gameMap)
 }
 
-// 取得地雷位置
+// GetMineIndex 取得地雷位置
 func GetMineIndex(mineCount, row, column int) map[int][2]int {
 	// 亂數最大值
 	max := row * column
@@ -102,45 +102,44 @@ func GetMineIndex(mineCount, row, column int) map[int][2]int {
 	return mineIndex
 }
 
-// 亂數產生器
+// MineRand 亂數產生器
 func MineRand(max int) int {
 	rand.Seed(int64(time.Now().Nanosecond()))
-	r_num := rand.Intn(max)
-	return r_num
+	return rand.Intn(max)
 }
 
-// 將遊戲地圖轉換成 html
-func MapHtml(row, column int, gameMap map[int]map[int]int) string {
-	gameHtml := ""
+// MapHTML 將遊戲地圖轉換成 html
+func MapHTML(row, column int, gameMap map[int]map[int]int) string {
+	gameHTML := ""
 
 	for h := 0; h < row; h++ {
-		gameHtml += `<tr height="40px" align="center">`
+		gameHTML += `<tr height="40px" align="center">`
 		for w := 0; w < column; w++ {
 			num := strconv.Itoa(h) + "_" + strconv.Itoa(w)
-			gameHtml += `<td width="40px" id="` + num + `">`
+			gameHTML += `<td width="40px" id="` + num + `">`
 
-			gameHtml += `<span id="content" style="display:none;">`
+			gameHTML += `<span id="content" style="display:none;">`
 			// 該地圖格子的內容
 			if gameMap[h][w] == -1 {
-				gameHtml += "M"
+				gameHTML += "M"
 			}
 			if gameMap[h][w] > 0 {
-				gameHtml += strconv.Itoa(gameMap[h][w])
+				gameHTML += strconv.Itoa(gameMap[h][w])
 			}
-			gameHtml += `</span>`
+			gameHTML += `</span>`
 
-			gameHtml += `<span id="icon" style="display:none;"></span>`
+			gameHTML += `<span id="icon" style="display:none;"></span>`
 
 			// 該地圖格子是地雷，加上地雷圖示
 			if gameMap[h][w] == -1 {
-				gameHtml += `<img id="imgM" src="icon/bomb.png" height="36 width="36" style="display:none;">`
+				gameHTML += `<img id="imgM" src="icon/bomb.png" height="36 width="36" style="display:none;">`
 			}
 
-			gameHtml += `<span id="flag" class="glyphicon glyphicon-flag" style="display:none"></span>`
+			gameHTML += `<span id="flag" class="glyphicon glyphicon-flag" style="display:none"></span>`
 
-			gameHtml += `</td>`
+			gameHTML += `</td>`
 		}
-		gameHtml += `</tr>`
+		gameHTML += `</tr>`
 	}
-	return gameHtml
+	return gameHTML
 }

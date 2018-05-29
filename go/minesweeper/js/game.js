@@ -2,6 +2,8 @@ $(document).ready(init);
 
 var clickCount = 0;
 
+var ws = new WebSocket("ws://127.0.0.1:8080/ws");
+
 function init() {
     $('#start').click(function () {
         clickCount = 0;
@@ -26,47 +28,37 @@ function level() {
         $("#m").val(40);
     }
     if ($(this).text() == "高級") {
-        $("#row").val(30);
-        $("#column").val(16);
+        $("#row").val(16);
+        $("#column").val(30);
         $("#m").val(99);
     }
 }
+ws.onmessage = function (event) {
+    var data = event.data;
+    $('#showTable').html(data);
+    $('#showTable td').click(clickMap);
+    $('#showTable td').dblclick(dbClickMap);
+    $('#showTable td').hover(onMap, outMap);
+    $('#showTable td').mousedown(function (event) {
+        if ($(this).find('#content').is(':hidden')) {
+            switch (event.which) {
+                case 3:
+                    $(this).find('#flag').toggle();
+                    break;
+            }
+        }
+    });
+};
 
 function setTable() {
-    $.get("/game/create?row=" + $("#row").val() + "&column=" + $("#column").val() + "&m=" + $("#m").val(), function(data){
-        $('#showTable').html(data);
-        $('#showTable td').click(clickMap);
-        $('#showTable td').dblclick(dbClickMap);
-        $('#showTable td').hover(onMap, outMap);
-        $('#showTable td').mousedown(function(event) {
-            if ($(this).find('#content').is(':hidden')) {
-                switch (event.which) {
-                    case 3:
-                        $(this).find('#flag').toggle();
-                        break;
-                }
-            }
-        });
-	});
+    param = $("#row").val() + "," + $("#column").val() + "," + $("#m").val()
+    ws.send(param);
 }
 
 function resetTable(trIndex, tdIndex) {
-    $.get("/game/create?row=" + $("#row").val() + "&column=" + $("#column").val() + "&m=" + $("#m").val(), function(data){
-        $('#showTable').html(data);
-        $('#showTable td').click(clickMap);
-        $('#showTable td').dblclick(dbClickMap);
-        $('#showTable td').hover(onMap, outMap);
-        $('#showTable td').mousedown(function(event) {
-            if ($(this).find('#content').is(':hidden')) {
-                switch (event.which) {
-                    case 3:
-                        $(this).find('#flag').toggle();
-                        break;
-                }
-            }
-        });
-        $('#showTable tr').eq(trIndex).find('td').eq(tdIndex).click();
-	});
+    $('#showTable tr').eq(trIndex).find('td').eq(tdIndex).click();
+    param = $("#row").val() + "," + $("#column").val() + "," + $("#m").val()
+    ws.send(param);
 }
 
 function onMap() {
@@ -91,7 +83,7 @@ function checkFlag(trIndex, tdIndex) {
     // 判斷是否為最上方
     if (trIndex != 0) {
         // 上
-        p = $('#showTable tr').eq(trIndex-1).find('td').eq(tdIndex);
+        p = $('#showTable tr').eq(trIndex - 1).find('td').eq(tdIndex);
         if (p.find('#flag').is(':visible')) {
             flag++;
         } else {
@@ -101,7 +93,7 @@ function checkFlag(trIndex, tdIndex) {
         // 判斷是否為最左側
         if (tdIndex != 0) {
             // 左上
-            p = $('#showTable tr').eq(trIndex-1).find('td').eq(tdIndex-1);
+            p = $('#showTable tr').eq(trIndex - 1).find('td').eq(tdIndex - 1);
             if (p.find('#flag').is(':visible')) {
                 flag++;
             } else {
@@ -110,7 +102,7 @@ function checkFlag(trIndex, tdIndex) {
         }
 
         // 右上
-        p = $('#showTable tr').eq(trIndex-1).find('td').eq(tdIndex+1);
+        p = $('#showTable tr').eq(trIndex - 1).find('td').eq(tdIndex + 1);
         if (p.find('#flag').is(':visible')) {
             flag++;
         } else {
@@ -121,14 +113,14 @@ function checkFlag(trIndex, tdIndex) {
     // 判斷是否為最左側
     if (tdIndex != 0) {
         // 左
-        p = $('#showTable tr').eq(trIndex).find('td').eq(tdIndex-1);
+        p = $('#showTable tr').eq(trIndex).find('td').eq(tdIndex - 1);
         if (p.find('#flag').is(':visible')) {
             flag++;
         } else {
             point.push(p);
         }
         // 左下
-        p = $('#showTable tr').eq(trIndex+1).find('td').eq(tdIndex-1);
+        p = $('#showTable tr').eq(trIndex + 1).find('td').eq(tdIndex - 1);
         if (p.find('#flag').is(':visible')) {
             flag++;
         } else {
@@ -137,28 +129,31 @@ function checkFlag(trIndex, tdIndex) {
     }
 
     // 右
-    p = $('#showTable tr').eq(trIndex).find('td').eq(tdIndex+1);
+    p = $('#showTable tr').eq(trIndex).find('td').eq(tdIndex + 1);
     if (p.find('#flag').is(':visible')) {
         flag++;
     } else {
         point.push(p);
     }
     // 右下
-    p = $('#showTable tr').eq(trIndex+1).find('td').eq(tdIndex+1);
+    p = $('#showTable tr').eq(trIndex + 1).find('td').eq(tdIndex + 1);
     if (p.find('#flag').is(':visible')) {
         flag++;
     } else {
         point.push(p);
     }
     // 下
-    p = $('#showTable tr').eq(trIndex+1).find('td').eq(tdIndex);
+    p = $('#showTable tr').eq(trIndex + 1).find('td').eq(tdIndex);
     if (p.find('#flag').is(':visible')) {
         flag++;
     } else {
         point.push(p);
     }
 
-    return {flag,point};
+    return {
+        flag,
+        point
+    };
 }
 
 function dbClickMap() {
@@ -173,14 +168,14 @@ function dbClickMap() {
     if (pNumber == check.flag) {
         aroundPoint(trIndex, tdIndex);
     } else {
-         $.each(check.point, function() {
+        $.each(check.point, function () {
             if ($(this).find('#content').is(':hidden')) {
-                 $(this).addClass('checkArount');
+                $(this).addClass('checkArount');
             }
-         });
+        });
 
         setTimeout(function () {
-            $.each(check.point, function() {
+            $.each(check.point, function () {
                 $(this).removeClass();
             });
         }, 250);
@@ -202,7 +197,7 @@ function clickMap() {
         var point = $(this);
 
         if (pNumber != check.flag) {
-                point.addClass('checkArount');
+            point.addClass('checkArount');
 
             setTimeout(function () {
                 point.removeClass();
@@ -212,7 +207,7 @@ function clickMap() {
     }
 
     var gameover = true;
-    $('#showTable td').each(function() {
+    $('#showTable td').each(function () {
         if ($(this).find('#content').is(':hidden')) {
             gameover = false;
         }
@@ -253,7 +248,7 @@ function clickMap() {
     }
 
     if (checkPass()) {
-        $('#showTable td').each(function() {
+        $('#showTable td').each(function () {
             $(this).find('#flag').hide();
             var color = checkPoint($(this));
             print(color, $(this));
@@ -268,7 +263,7 @@ function clickMap() {
 
 function checkPass() {
     gameover = true;
-    $('#showTable td').each(function() {
+    $('#showTable td').each(function () {
         if ($(this).find('#content').is(':hidden')) {
             gameover = false;
         }
@@ -277,7 +272,7 @@ function checkPass() {
         return;
     }
     var i = 0
-    $('#showTable td').each(function() {
+    $('#showTable td').each(function () {
         if ($(this).find('#content').is(':hidden')) {
             if ($(this).find('#content').text().trim() != "M") {
                 i++;
@@ -291,7 +286,7 @@ function checkPass() {
 }
 
 function checkOver(point) {
-    $('#showTable td').each(function() {
+    $('#showTable td').each(function () {
         if ($(this).find('#flag').is(':visible')) {
             $(this).find('#flag').hide();
             if ($(this).find('#content').text().trim() != "M") {
@@ -317,7 +312,7 @@ function aroundPoint(trIndex, tdIndex) {
     // 判斷是否為最上方
     if (trIndex != 0) {
         // 上
-        p = $('#showTable tr').eq(trIndex-1).find('td').eq(tdIndex);
+        p = $('#showTable tr').eq(trIndex - 1).find('td').eq(tdIndex);
         if (p.find('#content').is(':hidden')) {
             if (p.find('#content').text().trim() == '') {
                 zeroPoint.push(p);
@@ -330,7 +325,7 @@ function aroundPoint(trIndex, tdIndex) {
         // 判斷是否為最左側
         if (tdIndex != 0) {
             // 左上
-            p = $('#showTable tr').eq(trIndex-1).find('td').eq(tdIndex-1);
+            p = $('#showTable tr').eq(trIndex - 1).find('td').eq(tdIndex - 1);
             if (p.find('#content').is(':hidden')) {
                 if (p.find('#content').text().trim() == '') {
                     zeroPoint.push(p);
@@ -341,7 +336,7 @@ function aroundPoint(trIndex, tdIndex) {
         }
 
         // 右上
-        p = $('#showTable tr').eq(trIndex-1).find('td').eq(tdIndex+1);
+        p = $('#showTable tr').eq(trIndex - 1).find('td').eq(tdIndex + 1);
         if (p.find('#content').is(':hidden')) {
             if (p.find('#content').text().trim() == '') {
                 zeroPoint.push(p);
@@ -354,7 +349,7 @@ function aroundPoint(trIndex, tdIndex) {
     // 判斷是否為最左側
     if (tdIndex != 0) {
         // 左
-        p = $('#showTable tr').eq(trIndex).find('td').eq(tdIndex-1);
+        p = $('#showTable tr').eq(trIndex).find('td').eq(tdIndex - 1);
         if (p.find('#content').is(':hidden')) {
             if (p.find('#content').text().trim() == '') {
                 zeroPoint.push(p);
@@ -363,7 +358,7 @@ function aroundPoint(trIndex, tdIndex) {
             }
         }
         // 左下
-        p = $('#showTable tr').eq(trIndex+1).find('td').eq(tdIndex-1);
+        p = $('#showTable tr').eq(trIndex + 1).find('td').eq(tdIndex - 1);
         if (p.find('#content').is(':hidden')) {
             if (p.find('#content').text().trim() == '') {
                 zeroPoint.push(p);
@@ -374,7 +369,7 @@ function aroundPoint(trIndex, tdIndex) {
     }
 
     // 右
-    p = $('#showTable tr').eq(trIndex).find('td').eq(tdIndex+1);
+    p = $('#showTable tr').eq(trIndex).find('td').eq(tdIndex + 1);
     if (p.find('#content').is(':hidden')) {
         if (p.find('#content').text().trim() == '') {
             zeroPoint.push(p);
@@ -383,7 +378,7 @@ function aroundPoint(trIndex, tdIndex) {
         }
     }
     // 右下
-    p = $('#showTable tr').eq(trIndex+1).find('td').eq(tdIndex+1);
+    p = $('#showTable tr').eq(trIndex + 1).find('td').eq(tdIndex + 1);
     if (p.find('#content').is(':hidden')) {
         if (p.find('#content').text().trim() == '') {
             zeroPoint.push(p);
@@ -392,7 +387,7 @@ function aroundPoint(trIndex, tdIndex) {
         }
     }
     // 下
-    p = $('#showTable tr').eq(trIndex+1).find('td').eq(tdIndex);
+    p = $('#showTable tr').eq(trIndex + 1).find('td').eq(tdIndex);
     if (p.find('#content').is(':hidden')) {
         if (p.find('#content').text().trim() == '') {
             zeroPoint.push(p);
@@ -406,7 +401,7 @@ function aroundPoint(trIndex, tdIndex) {
     openZeroAround(zeroPoint);
 
     if (checkPass()) {
-        $('#showTable td').each(function() {
+        $('#showTable td').each(function () {
             $(this).find('#flag').hide();
             var color = checkPoint($(this));
             print(color, $(this));
@@ -417,7 +412,7 @@ function aroundPoint(trIndex, tdIndex) {
 }
 
 function openAround(point) {
-    $.each(point, function() {
+    $.each(point, function () {
         if ($(this).find('#flag').is(':hidden')) {
             if ($(this).find('#content').is(':hidden')) {
                 if ($(this).find('#content').text().trim() == "M") {
@@ -431,7 +426,7 @@ function openAround(point) {
 }
 
 function openZeroAround(point) {
-    $.each(point, function() {
+    $.each(point, function () {
         if ($(this).find('#flag').is(':hidden')) {
             if ($(this).find('#content').is(':hidden')) {
                 print(3, $(this));
@@ -459,40 +454,40 @@ function print(color, point) {
     // 1-M 2-Number 3-Zero 4-Boom
     if (color == 1) {
         color = {
-            'background':'#ff0000',
-            'background':'-webkit-radial-gradient(left top, #ff0000, #b30000)',
-            'background':'-o-linear-gradient(bottom right, #ff0000, #b30000)',
-            'background':'-moz-linear-gradient(bottom right, #ff0000, #b30000)',
-            'background':'linear-gradient(to bottom right, #ff0000, #b30000)',
+            'background': '#ff0000',
+            'background': '-webkit-radial-gradient(left top, #ff0000, #b30000)',
+            'background': '-o-linear-gradient(bottom right, #ff0000, #b30000)',
+            'background': '-moz-linear-gradient(bottom right, #ff0000, #b30000)',
+            'background': 'linear-gradient(to bottom right, #ff0000, #b30000)',
         };
         point.find('#imgM').show();
         point.find('#content').text('');
     }
     if (color == 2) {
         color = {
-            'background':'#0000cc',
-            'background':'-webkit-radial-gradient(left top, #0000cc, #4d4dff)',
-            'background':'-o-linear-gradient(bottom right, #0000cc, #4d4dff)',
-            'background':'-moz-linear-gradient(bottom right, #0000cc, #4d4dff)',
-            'background':'linear-gradient(to bottom right, #0000cc, #4d4dff)',
+            'background': '#0000cc',
+            'background': '-webkit-radial-gradient(left top, #0000cc, #4d4dff)',
+            'background': '-o-linear-gradient(bottom right, #0000cc, #4d4dff)',
+            'background': '-moz-linear-gradient(bottom right, #0000cc, #4d4dff)',
+            'background': 'linear-gradient(to bottom right, #0000cc, #4d4dff)',
         };
     }
     if (color == 3) {
         color = {
-            'background':'#99ccff',
-            'background':'-webkit-radial-gradient(left top, #99ccff, #cce6ff)',
-            'background':'-o-linear-gradient(bottom right, #99ccff, #cce6ff)',
-            'background':'-moz-linear-gradient(bottom right, #99ccff, #cce6ff)',
-            'background':'linear-gradient(to bottom right, #99ccff, #cce6ff)',
+            'background': '#99ccff',
+            'background': '-webkit-radial-gradient(left top, #99ccff, #cce6ff)',
+            'background': '-o-linear-gradient(bottom right, #99ccff, #cce6ff)',
+            'background': '-moz-linear-gradient(bottom right, #99ccff, #cce6ff)',
+            'background': 'linear-gradient(to bottom right, #99ccff, #cce6ff)',
         };
     }
     if (color == 4) {
         color = {
-            'background':'#99ccff',
-            'background':'-webkit-radial-gradient(left top, #ffff00, #ffcc00)',
-            'background':'-o-linear-gradient(bottom right, #ffff00, #ffcc00)',
-            'background':'-moz-linear-gradient(bottom right, #ffff00, #ffcc00)',
-            'background':'linear-gradient(to bottom right, #ffff00, #ffcc00)',
+            'background': '#99ccff',
+            'background': '-webkit-radial-gradient(left top, #ffff00, #ffcc00)',
+            'background': '-o-linear-gradient(bottom right, #ffff00, #ffcc00)',
+            'background': '-moz-linear-gradient(bottom right, #ffff00, #ffcc00)',
+            'background': 'linear-gradient(to bottom right, #ffff00, #ffcc00)',
         };
         point.find('#imgM').hide();
         point.find('#content').prop('style', 'color: black');
