@@ -14,3 +14,13 @@ Go 相關練習
 > ```go
 > go test -bench=. -benchmem
 > ```
+
+## minesweeper
+將之前寫的 PHP 踩地雷用 Go 改寫
+- 用 echo 套件建立連線 (port: 8080)
+- 已 websocket 進行遊戲操作
+
+> 使用執行檔
+> ```go
+> ./minesweeper
+> ```

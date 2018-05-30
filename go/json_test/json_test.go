@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"testing"
 
@@ -63,6 +64,13 @@ func BenchmarkJsonDecodeJay(b *testing.B) {
 	}
 }
 
+func TestJsonDecodeJay(t *testing.T) {
+	err := JSONDecodeJay()
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 // 以下為測試使用
 type user struct {
 	Name string `json:user`
@@ -106,5 +114,7 @@ func JSONEncodeJay() []byte {
 func JSONDecodeJay() error {
 	u := user{}
 	j := `{"user":"Emma","text":"https://www.google.com.tw/","note":"abc123"}`
-	return gojay.Unmarshal([]byte(j), &u)
+
+	dec := gojay.NewDecoder(bytes.NewReader([]byte(j)))
+	return dec.Decode(&u)
 }
