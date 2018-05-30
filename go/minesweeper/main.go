@@ -7,53 +7,56 @@ import (
 	"strings"
 
 	"github.com/gorilla/websocket"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 
 	Game "./game"
 )
 
-var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
-
-func createGame(c echo.Context) error {
-	// 取得傳入的 param
-	row, _ := strconv.Atoi(c.QueryParam("row"))
-	column, _ := strconv.Atoi(c.QueryParam("column"))
-	m, _ := strconv.Atoi(c.QueryParam("m"))
-
-	// 取得遊戲地圖
-	gameMapHTML := Game.CreateMap(row, column, m)
-
-	return c.String(http.StatusOK, gameMapHTML)
-
-	defer func() {
-		if p := recover(); p != nil {
-			fmt.Sprintf("cliententer panic: %v", p)
-		}
-	}()
-	return nil
+type reqParam struct {
+	Name  string `json:"name"`
+	Param string `json:"param"`
 }
 
+type resData struct {
+	Name string      `json:"name"`
+	Data interface{} `json:"data"`
+}
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
+
+var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+
 func keep(ws *websocket.Conn) bool {
+	inputData := reqParam{}
+	outputData := resData{}
 	//使用迴圈持續接收資料
 	for {
 		// 讀取ws
-		mt, param, err := ws.ReadMessage()
+		mt, input, err := ws.ReadMessage()
 		if err != nil {
 			fmt.Sprintf("ws.ReadMessage err: %s\n", err)
 			ws.Close()
 			return true
 		}
 
-		params := strings.Split(string(param), ",")
-		row, _ := strconv.Atoi(params[0])
-		column, _ := strconv.Atoi(params[1])
-		m, _ := strconv.Atoi(params[2])
+		err = json.Unmarshal(input, &inputData)
+		if err != nil {
+			fmt.Sprintf("json decode err: %s\n", err)
+			return true
+		}
 
-		// 取得遊戲地圖
-		gameMapHTML := Game.CreateMap(row, column, m)
+		outputData.Name = inputData.Name
+		outputData.Data = gameSwitch(inputData.Name, inputData.Param)
 
-		err = ws.WriteMessage(mt, []byte(gameMapHTML))
+		output, err := json.Marshal(outputData)
+		if err != nil {
+			fmt.Sprintf("json decode err: %s\n", err)
+			return true
+		}
+
+		err = ws.WriteMessage(mt, output)
 		if err != nil {
 			fmt.Sprintf("WriteMessage err: %s\n", err)
 		}
@@ -66,7 +69,62 @@ func keep(ws *websocket.Conn) bool {
 	return true
 }
 
-func gameWebsocket(c echo.Context) error {
+func gameSwitch(name string, param string) interface{} {
+	switch name {
+	case "create":
+		return createGame(param)
+	case "click":
+		return clickMap(param)
+	case "flag":
+		return clickFlag(param)
+	case "check_around_flag":
+		return checkAroundFlag(param)
+	}
+
+	return ""
+}
+
+func createGame(param string) string {
+	params := strings.Split(param, ",")
+	row, _ := strconv.Atoi(params[0])
+	column, _ := strconv.Atoi(params[1])
+	m, _ := strconv.Atoi(params[2])
+
+	Game.Init(row, column, m)
+
+	return Game.BlankMapHTML(row, column)
+}
+
+func clickMap(clickPoint string) Game.ClickResult {
+	// 點擊位置
+	data := strings.Split(clickPoint, "_")
+	h, _ := strconv.Atoi(data[0])
+	w, _ := strconv.Atoi(data[1])
+
+	return Game.CheckClick(h, w)
+}
+
+func clickFlag(param string) string {
+	// 點擊位置
+	data := strings.Split(param, "_")
+	h, _ := strconv.Atoi(data[0])
+	w, _ := strconv.Atoi(data[1])
+
+	Game.Flag(h, w)
+
+	return param
+}
+
+func checkAroundFlag(clickPoint string) Game.ClickResult {
+	// 點擊位置
+	data := strings.Split(clickPoint, "_")
+	h, _ := strconv.Atoi(data[0])
+	w, _ := strconv.Atoi(data[1])
+
+	return Game.CheckAroundFlag(h, w)
+}
+
+func websocketStart(c echo.Context) error {
 	//建立websocket連線
 	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 	//錯誤處理
@@ -97,10 +155,8 @@ func main() {
 	e.Static("/css", "css")
 	e.Static("/icon", "icon")
 
-	// 建立遊戲
-	e.GET("/game/create", createGame)
 	// websocket
-	e.GET("/ws", gameWebsocket)
+	e.GET("/ws", websocketStart)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }

@@ -7,7 +7,7 @@ import (
 )
 
 // CreateMap 建立遊戲地圖
-func CreateMap(row, column, m int) string {
+func CreateMap(row, column, m int) map[int]map[int]int {
 	// 空白的遊戲地圖
 	gameMap := make(map[int]map[int]int, row)
 	for height := 0; height < row; height++ {
@@ -81,7 +81,7 @@ func CreateMap(row, column, m int) string {
 		}
 	}
 
-	return MapHTML(row, column, gameMap)
+	return gameMap
 }
 
 // GetMineIndex 取得地雷位置
@@ -108,8 +108,8 @@ func MineRand(max int) int {
 	return rand.Intn(max)
 }
 
-// MapHTML 將遊戲地圖轉換成 html
-func MapHTML(row, column int, gameMap map[int]map[int]int) string {
+// BlankMapHTML 輸出空白的地圖Html
+func BlankMapHTML(row, column int) string {
 	gameHTML := ""
 
 	for h := 0; h < row; h++ {
@@ -117,26 +117,10 @@ func MapHTML(row, column int, gameMap map[int]map[int]int) string {
 		for w := 0; w < column; w++ {
 			num := strconv.Itoa(h) + "_" + strconv.Itoa(w)
 			gameHTML += `<td width="40px" id="` + num + `">`
-
-			gameHTML += `<span id="content" style="display:none;">`
-			// 該地圖格子的內容
-			if gameMap[h][w] == -1 {
-				gameHTML += "M"
-			}
-			if gameMap[h][w] > 0 {
-				gameHTML += strconv.Itoa(gameMap[h][w])
-			}
-			gameHTML += `</span>`
-
+			gameHTML += `<span id="content" style="display:none;"></span>`
 			gameHTML += `<span id="icon" style="display:none;"></span>`
-
-			// 該地圖格子是地雷，加上地雷圖示
-			if gameMap[h][w] == -1 {
-				gameHTML += `<img id="imgM" src="icon/bomb.png" height="36 width="36" style="display:none;">`
-			}
-
+			gameHTML += `<img id="imgM" src="icon/bomb.png" height="36 width="36" style="display:none;">`
 			gameHTML += `<span id="flag" class="glyphicon glyphicon-flag" style="display:none"></span>`
-
 			gameHTML += `</td>`
 		}
 		gameHTML += `</tr>`

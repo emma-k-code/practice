@@ -4,6 +4,25 @@ var clickCount = 0;
 
 var ws = new WebSocket("ws://127.0.0.1:8080/ws");
 
+ws.onmessage = function (event) {
+    var data = JSON.parse(event.data);
+    switch (data.name) {
+        case "create":
+            createTable(data.data)
+            break;
+        case "click":
+            clickResult(data.data)
+            break;
+        case "flag":
+            flagResult(data.data)
+            break;
+        case "check_around_flag":
+            checkFlagResult(data.data)
+            break;
+    }
+};
+
+// 網頁初始化
 function init() {
     $('#start').click(function () {
         clickCount = 0;
@@ -16,6 +35,7 @@ function init() {
     $('#high').click(level);
 }
 
+// 各級別遊戲設定
 function level() {
     if ($(this).text() == "初級") {
         $("#row").val(9);
@@ -33,8 +53,9 @@ function level() {
         $("#m").val(99);
     }
 }
-ws.onmessage = function (event) {
-    var data = event.data;
+
+// 建立遊戲地圖
+function createTable(data) {
     $('#showTable').html(data);
     $('#showTable td').click(clickMap);
     $('#showTable td').dblclick(dbClickMap);
@@ -43,39 +64,135 @@ ws.onmessage = function (event) {
         if ($(this).find('#content').is(':hidden')) {
             switch (event.which) {
                 case 3:
-                    $(this).find('#flag').toggle();
+                    flagGrip(this.id)
                     break;
             }
         }
     });
-};
-
-function setTable() {
-    param = $("#row").val() + "," + $("#column").val() + "," + $("#m").val()
-    ws.send(param);
 }
 
+// 地圖點擊結果
+function clickResult(data) {
+    $.each(data.open, function (index, grip) {
+        nowGrip = $('#' + grip.self)
+        nowGrip.find('#content').text(grip.content)
+        nowGrip.removeClass();
+        print(grip.status, nowGrip)
+
+    })
+
+    if (data.result == "over") {
+        isGameOver()
+    }
+    if (data.result == "clear") {
+        gameClear()
+    }
+}
+
+// 插旗結果
+function flagResult(id) {
+    point = $('#' + id)
+    point.find('#flag').toggle();
+}
+
+// 檢查四周插旗數量，直接開啟四周格子
+function checkFlagResult(data) {
+    $.each(data.open, function (index, grip) {
+        nowGrip = $('#' + grip.self)
+        nowGrip.find('#content').text(grip.content)
+        nowGrip.removeClass();
+        print(grip.status, nowGrip)
+    })
+
+    if (data.result == "over") {
+        isGameOver()
+    }
+    if (data.result == "clear") {
+        gameClear()
+    }
+}
+
+// 初次建立地圖
+function setTable() {
+    param = $("#row").val() + "," + $("#column").val() + "," + $("#m").val()
+    ws.send(JSON.stringify({
+        "name": "create",
+        "param": param
+    }));
+}
+
+// 地圖重置
 function resetTable(trIndex, tdIndex) {
     $('#showTable tr').eq(trIndex).find('td').eq(tdIndex).click();
     param = $("#row").val() + "," + $("#column").val() + "," + $("#m").val()
     ws.send(param);
 }
 
-function onMap() {
-    if ($(this).find('#content').is(':visible')) {
+// 點擊地圖
+function clickMap() {
+    if ($(this).find('#flag').is(':visible')) {
         return;
     }
-    $(this).addClass('onMap');
-}
 
-function outMap() {
+    // 已開啟的格子顯示提示
     if ($(this).find('#content').is(':visible')) {
+        openedShow($(this))
         return;
     }
-    $(this).removeClass();
-    $(this).addClass('outMap');
+
+    ws.send(JSON.stringify({
+        "name": "click",
+        "param": this.id
+    }));
+
+    return;
 }
 
+// 格子插旗
+function flagGrip(id) {
+    ws.send(JSON.stringify({
+        "name": "flag",
+        "param": id
+    }));
+}
+
+// 檢查四周的旗子 決定是否開啟四周個格子
+function checkAroundFlag(id) {
+    ws.send(JSON.stringify({
+        "name": "check_around_flag",
+        "param": id
+    }));
+}
+
+// 雙擊地圖
+function dbClickMap() {
+    if ($(this).find('#content').is(':hidden')) {
+        return;
+    }
+
+    var pNumber = $(this).find('#content').text().trim();
+    var trIndex = $(this).closest('tr').index();
+    var tdIndex = $(this).closest('td').index();
+    var check = checkFlag(trIndex, tdIndex);
+
+    if (pNumber != check.flag) {
+        $.each(check.point, function () {
+            if ($(this).find('#content').is(':hidden')) {
+                $(this).addClass('checkArount');
+            }
+        });
+        setTimeout(function () {
+            $.each(check.point, function () {
+                $(this).removeClass();
+            });
+        }, 250);
+    } else {
+        // 發 ws 檢查四周的旗子
+        checkAroundFlag(this.id)
+    }
+}
+
+// 檢查四周個旗子數
 function checkFlag(trIndex, tdIndex) {
     var point = [];
     var flag = 0;
@@ -156,300 +273,48 @@ function checkFlag(trIndex, tdIndex) {
     };
 }
 
-function dbClickMap() {
-    if ($(this).find('#content').is(':hidden')) {
-        return;
-    }
-
-    var pNumber = $(this).find('#content').text().trim();
-    var trIndex = $(this).closest('tr').index();
-    var tdIndex = $(this).closest('td').index();
-    var check = checkFlag(trIndex, tdIndex);
-    if (pNumber == check.flag) {
-        aroundPoint(trIndex, tdIndex);
-    } else {
-        $.each(check.point, function () {
-            if ($(this).find('#content').is(':hidden')) {
-                $(this).addClass('checkArount');
-            }
-        });
-
-        setTimeout(function () {
-            $.each(check.point, function () {
-                $(this).removeClass();
-            });
-        }, 250);
-    }
-
-}
-
-function clickMap() {
-
-    if ($(this).find('#flag').is(':visible')) {
-        return;
-    }
-
+/** 以下為畫面效果 **/
+// 滑鼠 hover
+function onMap() {
     if ($(this).find('#content').is(':visible')) {
-        var pNumber = $(this).find('#content').text().trim();
-        var trIndex = $(this).closest('tr').index();
-        var tdIndex = $(this).closest('td').index();
-        var check = checkFlag(trIndex, tdIndex);
-        var point = $(this);
-
-        if (pNumber != check.flag) {
-            point.addClass('checkArount');
-
-            setTimeout(function () {
-                point.removeClass();
-            }, 250);
-        }
         return;
     }
-
-    var gameover = true;
-    $('#showTable td').each(function () {
-        if ($(this).find('#content').is(':hidden')) {
-            gameover = false;
-        }
-    });
-
-    if (gameover) {
+    $(this).addClass('onMap');
+}
+// 滑鼠 hover over
+function outMap() {
+    if ($(this).find('#content').is(':visible')) {
         return;
     }
-
-    if ($(this).find('#content').text().trim() == "M") {
-        if (clickCount == 0) {
-            var trIndex = $(this).closest('tr').index();
-            var tdIndex = $(this).closest('td').index();
-            resetTable(trIndex, tdIndex);
-            clickCount++;
-            return;
-        } else {
-            checkOver($(this));
-            gameover = true;
-        }
-    }
-
-    if (gameover) {
-        return;
-    }
-
     $(this).removeClass();
-
-    print(2, $(this));
-
-    if ($(this).find('#content').text().trim() == '') {
-        var trIndex = $(this).closest('tr').index();
-        var tdIndex = $(this).closest('td').index();
-
-        print(3, $(this));
-
-        aroundPoint(trIndex, tdIndex);
-    }
-
-    if (checkPass()) {
-        $('#showTable td').each(function () {
-            $(this).find('#flag').hide();
-            var color = checkPoint($(this));
-            print(color, $(this));
-        });
-
-        $("#myModal .modal-title").text('過關');
-        $("#myModal").modal('show');
-    }
-
-    clickCount++;
+    $(this).addClass('outMap');
 }
-
-function checkPass() {
-    gameover = true;
-    $('#showTable td').each(function () {
-        if ($(this).find('#content').is(':hidden')) {
-            gameover = false;
-        }
-    });
-    if (gameover) {
-        return;
-    }
-    var i = 0
-    $('#showTable td').each(function () {
-        if ($(this).find('#content').is(':hidden')) {
-            if ($(this).find('#content').text().trim() != "M") {
-                i++;
-            }
-        }
-    });
-
-    if (i == 0) {
-        return true;
-    }
-}
-
-function checkOver(point) {
-    $('#showTable td').each(function () {
-        if ($(this).find('#flag').is(':visible')) {
-            $(this).find('#flag').hide();
-            if ($(this).find('#content').text().trim() != "M") {
-                $(this).find('#content').text('');
-                $(this).find('#content').show();
-                $(this).find('#icon').addClass('glyphicon glyphicon-remove');
-                $(this).find('#icon').show();
-            }
-        }
-        var color = checkPoint($(this));
-        print(color, $(this));
-    });
-
-    print(4, point);
+// 遊戲結束提示
+function isGameOver() {
     $("#myModal .modal-title").text('Game Over');
     $("#myModal").modal('show');
 }
+// 遊戲過關提示
+function gameClear() {
+    $("#myModal .modal-title").text('過關');
+    $("#myModal").modal('show');
+}
+// 已開啟格子顯示
+function openedShow(clickPoint) {
+    var pNumber = clickPoint.find('#content').text().trim();
+    var trIndex = clickPoint.closest('tr').index();
+    var tdIndex = clickPoint.closest('td').index();
+    var check = checkFlag(trIndex, tdIndex);
 
-function aroundPoint(trIndex, tdIndex) {
-    var point = [];
-    var zeroPoint = [];
+    if (pNumber != check.flag) {
+        clickPoint.addClass('checkArount');
 
-    // 判斷是否為最上方
-    if (trIndex != 0) {
-        // 上
-        p = $('#showTable tr').eq(trIndex - 1).find('td').eq(tdIndex);
-        if (p.find('#content').is(':hidden')) {
-            if (p.find('#content').text().trim() == '') {
-                zeroPoint.push(p);
-            } else {
-                point.push(p);
-            }
-        }
-
-
-        // 判斷是否為最左側
-        if (tdIndex != 0) {
-            // 左上
-            p = $('#showTable tr').eq(trIndex - 1).find('td').eq(tdIndex - 1);
-            if (p.find('#content').is(':hidden')) {
-                if (p.find('#content').text().trim() == '') {
-                    zeroPoint.push(p);
-                } else {
-                    point.push(p);
-                }
-            }
-        }
-
-        // 右上
-        p = $('#showTable tr').eq(trIndex - 1).find('td').eq(tdIndex + 1);
-        if (p.find('#content').is(':hidden')) {
-            if (p.find('#content').text().trim() == '') {
-                zeroPoint.push(p);
-            } else {
-                point.push(p);
-            }
-        }
-    }
-
-    // 判斷是否為最左側
-    if (tdIndex != 0) {
-        // 左
-        p = $('#showTable tr').eq(trIndex).find('td').eq(tdIndex - 1);
-        if (p.find('#content').is(':hidden')) {
-            if (p.find('#content').text().trim() == '') {
-                zeroPoint.push(p);
-            } else {
-                point.push(p);
-            }
-        }
-        // 左下
-        p = $('#showTable tr').eq(trIndex + 1).find('td').eq(tdIndex - 1);
-        if (p.find('#content').is(':hidden')) {
-            if (p.find('#content').text().trim() == '') {
-                zeroPoint.push(p);
-            } else {
-                point.push(p);
-            }
-        }
-    }
-
-    // 右
-    p = $('#showTable tr').eq(trIndex).find('td').eq(tdIndex + 1);
-    if (p.find('#content').is(':hidden')) {
-        if (p.find('#content').text().trim() == '') {
-            zeroPoint.push(p);
-        } else {
-            point.push(p);
-        }
-    }
-    // 右下
-    p = $('#showTable tr').eq(trIndex + 1).find('td').eq(tdIndex + 1);
-    if (p.find('#content').is(':hidden')) {
-        if (p.find('#content').text().trim() == '') {
-            zeroPoint.push(p);
-        } else {
-            point.push(p);
-        }
-    }
-    // 下
-    p = $('#showTable tr').eq(trIndex + 1).find('td').eq(tdIndex);
-    if (p.find('#content').is(':hidden')) {
-        if (p.find('#content').text().trim() == '') {
-            zeroPoint.push(p);
-        } else {
-            point.push(p);
-        }
-    }
-
-
-    openAround(point);
-    openZeroAround(zeroPoint);
-
-    if (checkPass()) {
-        $('#showTable td').each(function () {
-            $(this).find('#flag').hide();
-            var color = checkPoint($(this));
-            print(color, $(this));
-        });
-        $("#myModal .modal-title").text('過關');
-        $("#myModal").modal('show');
+        setTimeout(function () {
+            clickPoint.removeClass();
+        }, 250);
     }
 }
-
-function openAround(point) {
-    $.each(point, function () {
-        if ($(this).find('#flag').is(':hidden')) {
-            if ($(this).find('#content').is(':hidden')) {
-                if ($(this).find('#content').text().trim() == "M") {
-                    checkOver($(this));
-                } else {
-                    print(2, $(this));
-                }
-            }
-        }
-    });
-}
-
-function openZeroAround(point) {
-    $.each(point, function () {
-        if ($(this).find('#flag').is(':hidden')) {
-            if ($(this).find('#content').is(':hidden')) {
-                print(3, $(this));
-                aroundPoint($(this).closest('tr').index(), $(this).closest('td').index());
-            }
-        }
-    });
-}
-
-function checkPoint(point) {
-    if (point.find('#flag').is(':hidden')) {
-        if (point.find('#content').text().trim() == '') {
-            return 3;
-        } else if (point.find('#content').text().trim() == "M") {
-            return 1;
-        } else {
-            return 2;
-        }
-    }
-
-    return 0;
-}
-
+// 更改格子樣式
 function print(color, point) {
     // 1-M 2-Number 3-Zero 4-Boom
     if (color == 1) {
@@ -460,6 +325,7 @@ function print(color, point) {
             'background': '-moz-linear-gradient(bottom right, #ff0000, #b30000)',
             'background': 'linear-gradient(to bottom right, #ff0000, #b30000)',
         };
+        point.find('#flag').hide();
         point.find('#imgM').show();
         point.find('#content').text('');
     }
@@ -471,6 +337,7 @@ function print(color, point) {
             'background': '-moz-linear-gradient(bottom right, #0000cc, #4d4dff)',
             'background': 'linear-gradient(to bottom right, #0000cc, #4d4dff)',
         };
+        point.find('#flag').hide();
     }
     if (color == 3) {
         color = {
@@ -480,6 +347,8 @@ function print(color, point) {
             'background': '-moz-linear-gradient(bottom right, #99ccff, #cce6ff)',
             'background': 'linear-gradient(to bottom right, #99ccff, #cce6ff)',
         };
+        point.find('#flag').hide();
+        point.find('#content').text('');
     }
     if (color == 4) {
         color = {
@@ -489,6 +358,7 @@ function print(color, point) {
             'background': '-moz-linear-gradient(bottom right, #ffff00, #ffcc00)',
             'background': 'linear-gradient(to bottom right, #ffff00, #ffcc00)',
         };
+        point.find('#flag').hide();
         point.find('#imgM').hide();
         point.find('#content').prop('style', 'color: black');
         point.find('#icon').addClass('glyphicon glyphicon-fire');
@@ -500,6 +370,5 @@ function print(color, point) {
         if (point.find('#icon').is(':hidden')) {
             point.find('#content').show();
         }
-
     }
 }
