@@ -8,7 +8,6 @@ Go 相關練習
 |-----------------|
 | Std Library     |
 | JsonIter        |
-| GoJay           |
 
 > 測試指令
 > ```go
