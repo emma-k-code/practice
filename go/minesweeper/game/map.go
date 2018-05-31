@@ -7,11 +7,11 @@ import (
 )
 
 // CreateMap 建立遊戲地圖
-func CreateMap(row, column, m int) map[int]map[int]int {
+func CreateMap(row, column, m int) [][]int {
 	// 空白的遊戲地圖
-	gameMap := make(map[int]map[int]int, row)
+	gameMap := make([][]int, row)
 	for height := 0; height < row; height++ {
-		gameMap[height] = make(map[int]int, column)
+		gameMap[height] = make([]int, column)
 		for width := 0; width < column; width++ {
 			gameMap[height][width] = 0
 		}
@@ -30,51 +30,22 @@ func CreateMap(row, column, m int) map[int]map[int]int {
 	for h, columnMap := range gameMap {
 		for w, val := range columnMap {
 			// 沒有地雷需要計算八個方向的格子地雷數
+
 			if val == 0 {
-				// 上
-				if val, has := gameMap[h-1][w]; has {
-					if val == -1 {
-						gameMap[h][w]++
-					}
-				}
-				// 下
-				if val, has := gameMap[h+1][w]; has {
-					if val == -1 {
-						gameMap[h][w]++
-					}
+				// 八個方位
+				around := [8][2]int{
+					[2]int{h - 1, w}, [2]int{h - 1, w - 1}, [2]int{h - 1, w + 1},
+					[2]int{h, w - 1}, [2]int{h, w + 1},
+					[2]int{h + 1, w}, [2]int{h + 1, w - 1}, [2]int{h + 1, w + 1},
 				}
 
-				// 左測上~下
-				if val, has := gameMap[h-1][w-1]; has {
-					if val == -1 {
-						gameMap[h][w]++
-					}
-				}
-				if val, has := gameMap[h][w-1]; has {
-					if val == -1 {
-						gameMap[h][w]++
-					}
-				}
-				if val, has := gameMap[h+1][w-1]; has {
-					if val == -1 {
-						gameMap[h][w]++
-					}
-				}
-
-				// 右側上~下
-				if val, has := gameMap[h-1][w+1]; has {
-					if val == -1 {
-						gameMap[h][w]++
-					}
-				}
-				if val, has := gameMap[h][w+1]; has {
-					if val == -1 {
-						gameMap[h][w]++
-					}
-				}
-				if val, has := gameMap[h+1][w+1]; has {
-					if val == -1 {
-						gameMap[h][w]++
+				for _, aroundPoint := range around {
+					checkY := aroundPoint[0]
+					checkX := aroundPoint[1]
+					if checkY >= 0 && checkY < row && checkX >= 0 && checkX < column {
+						if gameMap[checkY][checkX] == -1 {
+							gameMap[h][w]++
+						}
 					}
 				}
 			}
@@ -85,18 +56,28 @@ func CreateMap(row, column, m int) map[int]map[int]int {
 }
 
 // GetMineIndex 取得地雷位置
-func GetMineIndex(mineCount, row, column int) map[int][2]int {
+func GetMineIndex(mineCount, row, column int) [][2]int {
 	// 亂數最大值
 	max := row * column
 
+	// 亂數表 (避免出現重複亂數)
+	randNum := make([]int, max)
+	for i := 0; i < max; i++ {
+		randNum[i] = i
+	}
+
 	// 地雷位置
-	mineIndex := make(map[int][2]int)
+	mineIndex := make([][2]int, mineCount)
 
 	for i := 0; i < mineCount; i++ {
-		index := MineRand(max)
+		// 取除亂數表中的亂數
+		index := MineRand(len(randNum) - 1)
+
+		// 從亂數表中移除已出現的數字
+		randNum = append(randNum[:index], randNum[index+1:]...)
 
 		// 高 and 寬的位置
-		mineIndex[i] = [2]int{index / column, index % column}
+		mineIndex[i] = [2]int{randNum[index] / column, randNum[index] % column}
 	}
 
 	return mineIndex

@@ -21,7 +21,7 @@ type Grip struct {
 var height, width int
 
 // gameMap 遊戲地圖
-var gameMap = make(map[int]map[int]int)
+var gameMap = [][]int{}
 
 // isOpenGrip 已開啟的位置
 var isOpenGrip = []string{}
@@ -120,7 +120,7 @@ func CheckAroundFlag(h, w int) ClickResult {
 	for _, aroundPoint := range around {
 		checkY := aroundPoint[0]
 		checkX := aroundPoint[1]
-		if _, has := gameMap[checkY][checkX]; has {
+		if checkY >= 0 && checkY < height && checkX >= 0 && checkX < width {
 			checkPoint := strconv.Itoa(checkY) + "_" + strconv.Itoa(checkX)
 			if isFlag(checkPoint) {
 				flagCount++
@@ -133,7 +133,9 @@ func CheckAroundFlag(h, w int) ClickResult {
 		for _, aroundPoint := range around {
 			checkY := aroundPoint[0]
 			checkX := aroundPoint[1]
-			if val, has := gameMap[checkY][checkX]; has {
+			if checkY >= 0 && checkY < height && checkX >= 0 && checkX < width {
+				val := gameMap[checkY][checkX]
+
 				checkPoint := strconv.Itoa(checkY) + "_" + strconv.Itoa(checkX)
 				if !isOpen(checkPoint) && !isFlag(checkPoint) {
 					checkGrip := Grip{Self: checkPoint}
@@ -192,7 +194,8 @@ func checkAround(h, w int, res *ClickResult) {
 	for _, aroundPoint := range around {
 		checkY := aroundPoint[0]
 		checkX := aroundPoint[1]
-		if val, has := gameMap[checkY][checkX]; has {
+		if checkY >= 0 && checkY < height && checkX >= 0 && checkX < width {
+			val := gameMap[checkY][checkX]
 			checkPoint := strconv.Itoa(checkY) + "_" + strconv.Itoa(checkX)
 
 			// 格子尚未開啟 or 插旗
