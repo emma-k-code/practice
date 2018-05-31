@@ -78,7 +78,6 @@ function clickResult(data) {
         nowGrip.find('#content').text(grip.content)
         nowGrip.removeClass();
         print(grip.status, nowGrip)
-
     })
 
     if (data.result == "over") {
@@ -125,7 +124,10 @@ function setTable() {
 function resetTable(trIndex, tdIndex) {
     $('#showTable tr').eq(trIndex).find('td').eq(tdIndex).click();
     param = $("#row").val() + "," + $("#column").val() + "," + $("#m").val()
-    ws.send(param);
+    ws.send(JSON.stringify({
+        "name": "create",
+        "param": param
+    }));
 }
 
 // 點擊地圖
@@ -144,8 +146,6 @@ function clickMap() {
         "name": "click",
         "param": this.id
     }));
-
-    return;
 }
 
 // 格子插旗

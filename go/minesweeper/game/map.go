@@ -7,11 +7,11 @@ import (
 )
 
 // CreateMap 建立遊戲地圖
-func CreateMap(row, column, m int) map[int]map[int]int {
+func CreateMap(row, column, m int) [][]int {
 	// 空白的遊戲地圖
-	gameMap := make(map[int]map[int]int, row)
+	gameMap := make([][]int, row)
 	for height := 0; height < row; height++ {
-		gameMap[height] = make(map[int]int, column)
+		gameMap[height] = make([]int, column)
 		for width := 0; width < column; width++ {
 			gameMap[height][width] = 0
 		}
@@ -27,54 +27,20 @@ func CreateMap(row, column, m int) map[int]map[int]int {
 	}
 
 	// 計算每個格子周圍的地雷數
-	for h, columnMap := range gameMap {
-		for w, val := range columnMap {
-			// 沒有地雷需要計算八個方向的格子地雷數
-			if val == 0 {
-				// 上
-				if val, has := gameMap[h-1][w]; has {
-					if val == -1 {
-						gameMap[h][w]++
-					}
-				}
-				// 下
-				if val, has := gameMap[h+1][w]; has {
-					if val == -1 {
-						gameMap[h][w]++
-					}
-				}
+	for nowY, columnMap := range gameMap {
+		for nowX, val := range columnMap {
+			if val != 0 {
+				continue
+			}
 
-				// 左測上~下
-				if val, has := gameMap[h-1][w-1]; has {
-					if val == -1 {
-						gameMap[h][w]++
-					}
-				}
-				if val, has := gameMap[h][w-1]; has {
-					if val == -1 {
-						gameMap[h][w]++
-					}
-				}
-				if val, has := gameMap[h+1][w-1]; has {
-					if val == -1 {
-						gameMap[h][w]++
-					}
-				}
-
-				// 右側上~下
-				if val, has := gameMap[h-1][w+1]; has {
-					if val == -1 {
-						gameMap[h][w]++
-					}
-				}
-				if val, has := gameMap[h][w+1]; has {
-					if val == -1 {
-						gameMap[h][w]++
-					}
-				}
-				if val, has := gameMap[h+1][w+1]; has {
-					if val == -1 {
-						gameMap[h][w]++
+			// 沒有地雷需要計算八個方向的格子地雷數\
+			// 取得八個方位座標
+			around := GetAroundPosition(nowY, nowX)
+			for _, point := range around {
+				y, x := point[0], point[1]
+				if y >= 0 && y < row && x >= 0 && x < column {
+					if gameMap[y][x] == -1 {
+						gameMap[nowY][nowX]++
 					}
 				}
 			}
@@ -85,18 +51,28 @@ func CreateMap(row, column, m int) map[int]map[int]int {
 }
 
 // GetMineIndex 取得地雷位置
-func GetMineIndex(mineCount, row, column int) map[int][2]int {
+func GetMineIndex(mineCount, row, column int) [][2]int {
 	// 亂數最大值
 	max := row * column
 
+	// 亂數表 (避免出現重複亂數)
+	randNum := make([]int, max)
+	for i := 0; i < max; i++ {
+		randNum[i] = i
+	}
+
 	// 地雷位置
-	mineIndex := make(map[int][2]int)
+	mineIndex := make([][2]int, mineCount)
 
 	for i := 0; i < mineCount; i++ {
-		index := MineRand(max)
+		// 取除亂數表中的亂數
+		index := MineRand(len(randNum) - 1)
+
+		// 從亂數表中移除已出現的數字
+		randNum = append(randNum[:index], randNum[index+1:]...)
 
 		// 高 and 寬的位置
-		mineIndex[i] = [2]int{index / column, index % column}
+		mineIndex[i] = [2]int{randNum[index] / column, randNum[index] % column}
 	}
 
 	return mineIndex
@@ -106,6 +82,15 @@ func GetMineIndex(mineCount, row, column int) map[int][2]int {
 func MineRand(max int) int {
 	rand.Seed(int64(time.Now().Nanosecond()))
 	return rand.Intn(max)
+}
+
+// GetAroundPosition 取得該位置周圍的座標
+func GetAroundPosition(y, x int) [8][2]int {
+	return [8][2]int{
+		[2]int{y - 1, x}, [2]int{y - 1, x - 1}, [2]int{y - 1, x + 1},
+		[2]int{y, x - 1}, [2]int{y, x + 1},
+		[2]int{y + 1, x}, [2]int{y + 1, x - 1}, [2]int{y + 1, x + 1},
+	}
 }
 
 // BlankMapHTML 輸出空白的地圖Html

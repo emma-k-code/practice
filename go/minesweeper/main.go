@@ -31,6 +31,7 @@ var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { retu
 func keep(ws *websocket.Conn) bool {
 	inputData := reqParam{}
 	outputData := resData{}
+
 	//使用迴圈持續接收資料
 	for {
 		// 讀取ws
@@ -61,6 +62,7 @@ func keep(ws *websocket.Conn) bool {
 			fmt.Sprintf("WriteMessage err: %s\n", err)
 		}
 	}
+
 	defer func() {
 		if p := recover(); p != nil {
 			fmt.Sprintf("cliententer panic: %v", p)
