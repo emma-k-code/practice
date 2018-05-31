@@ -110,18 +110,13 @@ func CheckAroundFlag(h, w int) ClickResult {
 	flagCount := 0
 
 	// 八個方位
-	around := [8][2]int{
-		[2]int{h - 1, w}, [2]int{h - 1, w - 1}, [2]int{h - 1, w + 1},
-		[2]int{h, w - 1}, [2]int{h, w + 1},
-		[2]int{h + 1, w}, [2]int{h + 1, w - 1}, [2]int{h + 1, w + 1},
-	}
+	around := GetAroundPosition(h, w)
 
 	// 計算四周的插旗數量
-	for _, aroundPoint := range around {
-		checkY := aroundPoint[0]
-		checkX := aroundPoint[1]
-		if checkY >= 0 && checkY < height && checkX >= 0 && checkX < width {
-			checkPoint := strconv.Itoa(checkY) + "_" + strconv.Itoa(checkX)
+	for _, point := range around {
+		y, x := point[0], point[1]
+		if y >= 0 && y < height && x >= 0 && x < width {
+			checkPoint := strconv.Itoa(y) + "_" + strconv.Itoa(x)
 			if isFlag(checkPoint) {
 				flagCount++
 			}
@@ -130,13 +125,12 @@ func CheckAroundFlag(h, w int) ClickResult {
 
 	// 插旗數量正確 直接開啟四周的格子
 	if flagCount == clickContent {
-		for _, aroundPoint := range around {
-			checkY := aroundPoint[0]
-			checkX := aroundPoint[1]
-			if checkY >= 0 && checkY < height && checkX >= 0 && checkX < width {
-				val := gameMap[checkY][checkX]
+		for _, point := range around {
+			y, x := point[0], point[1]
+			if y >= 0 && y < height && x >= 0 && x < width {
+				val := gameMap[y][x]
 
-				checkPoint := strconv.Itoa(checkY) + "_" + strconv.Itoa(checkX)
+				checkPoint := strconv.Itoa(y) + "_" + strconv.Itoa(x)
 				if !isOpen(checkPoint) && !isFlag(checkPoint) {
 					checkGrip := Grip{Self: checkPoint}
 
@@ -168,7 +162,7 @@ func CheckAroundFlag(h, w int) ClickResult {
 
 					// 格子為空需要再檢查周圍個格子
 					if val == 0 {
-						checkAround(checkY, checkX, &res)
+						checkAround(y, x, &res)
 					}
 				}
 			}
@@ -185,18 +179,13 @@ func CheckAroundFlag(h, w int) ClickResult {
 // checkAround 檢查四周格子內容，將空格全部開啟
 func checkAround(h, w int, res *ClickResult) {
 	// 八個方位
-	around := [8][2]int{
-		[2]int{h - 1, w}, [2]int{h - 1, w - 1}, [2]int{h - 1, w + 1},
-		[2]int{h, w - 1}, [2]int{h, w + 1},
-		[2]int{h + 1, w}, [2]int{h + 1, w - 1}, [2]int{h + 1, w + 1},
-	}
+	around := GetAroundPosition(h, w)
 
-	for _, aroundPoint := range around {
-		checkY := aroundPoint[0]
-		checkX := aroundPoint[1]
-		if checkY >= 0 && checkY < height && checkX >= 0 && checkX < width {
-			val := gameMap[checkY][checkX]
-			checkPoint := strconv.Itoa(checkY) + "_" + strconv.Itoa(checkX)
+	for _, point := range around {
+		y, x := point[0], point[1]
+		if y >= 0 && y < height && x >= 0 && x < width {
+			val := gameMap[y][x]
+			checkPoint := strconv.Itoa(y) + "_" + strconv.Itoa(x)
 
 			// 格子尚未開啟 or 插旗
 			if !isOpen(checkPoint) && !isFlag(checkPoint) {
@@ -219,7 +208,7 @@ func checkAround(h, w int, res *ClickResult) {
 
 				// 格子為空需要再檢查周圍個格子
 				if val == 0 {
-					checkAround(checkY, checkX, res)
+					checkAround(y, x, res)
 				}
 			}
 		}
@@ -278,7 +267,6 @@ func gameOver(res *ClickResult) {
 // 檢查是否已經過關
 func isGameClear() bool {
 	total := height * width
-
 	openedCount := len(isOpenGrip) + len(flagGrip)
 
 	return total == openedCount

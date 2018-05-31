@@ -27,25 +27,20 @@ func CreateMap(row, column, m int) [][]int {
 	}
 
 	// 計算每個格子周圍的地雷數
-	for h, columnMap := range gameMap {
-		for w, val := range columnMap {
-			// 沒有地雷需要計算八個方向的格子地雷數
+	for nowY, columnMap := range gameMap {
+		for nowX, val := range columnMap {
+			if val != 0 {
+				continue
+			}
 
-			if val == 0 {
-				// 八個方位
-				around := [8][2]int{
-					[2]int{h - 1, w}, [2]int{h - 1, w - 1}, [2]int{h - 1, w + 1},
-					[2]int{h, w - 1}, [2]int{h, w + 1},
-					[2]int{h + 1, w}, [2]int{h + 1, w - 1}, [2]int{h + 1, w + 1},
-				}
-
-				for _, aroundPoint := range around {
-					checkY := aroundPoint[0]
-					checkX := aroundPoint[1]
-					if checkY >= 0 && checkY < row && checkX >= 0 && checkX < column {
-						if gameMap[checkY][checkX] == -1 {
-							gameMap[h][w]++
-						}
+			// 沒有地雷需要計算八個方向的格子地雷數\
+			// 取得八個方位座標
+			around := GetAroundPosition(nowY, nowX)
+			for _, point := range around {
+				y, x := point[0], point[1]
+				if y >= 0 && y < row && x >= 0 && x < column {
+					if gameMap[y][x] == -1 {
+						gameMap[nowY][nowX]++
 					}
 				}
 			}
@@ -87,6 +82,15 @@ func GetMineIndex(mineCount, row, column int) [][2]int {
 func MineRand(max int) int {
 	rand.Seed(int64(time.Now().Nanosecond()))
 	return rand.Intn(max)
+}
+
+// GetAroundPosition 取得該位置周圍的座標
+func GetAroundPosition(y, x int) [8][2]int {
+	return [8][2]int{
+		[2]int{y - 1, x}, [2]int{y - 1, x - 1}, [2]int{y - 1, x + 1},
+		[2]int{y, x - 1}, [2]int{y, x + 1},
+		[2]int{y + 1, x}, [2]int{y + 1, x - 1}, [2]int{y + 1, x + 1},
+	}
 }
 
 // BlankMapHTML 輸出空白的地圖Html
