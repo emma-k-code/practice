@@ -23,3 +23,6 @@ Go 相關練習
 > ```go
 > ./minesweeper
 > ```
+
+## swagger
+使用 go-swagger 建立 API 文檔
