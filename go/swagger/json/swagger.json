@@ -1,0 +1,92 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "http"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "description": "此為說明文字",
+    "title": "Swagger 測試用 API",
+    "version": "0.0.1"
+  },
+  "basePath": "/api",
+  "paths": {
+    "/user": {
+      "get": {
+        "description": "This will show a user info",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "User"
+        ],
+        "summary": "get a user by userID",
+        "operationId": "getSingleUser",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "會員ID",
+            "name": "id",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功回傳資料",
+            "schema": {
+              "type": "object",
+              "required": [
+                "code",
+                "msg",
+                "ret"
+              ],
+              "properties": {
+                "code": {
+                  "description": "錯誤代碼",
+                  "type": "integer"
+                },
+                "msg": {
+                  "description": "錯誤訊息",
+                  "type": "string"
+                },
+                "ret": {
+                  "description": "回傳資料",
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "description": "會員Email",
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "會員ID",
+                      "type": "integer"
+                    },
+                    "name": {
+                      "description": "會員名稱",
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "example": {
+                "code": 0,
+                "msg": "測試用API",
+                "ret": {
+                  "email": "test@mail.com",
+                  "id": 0,
+                  "name": "test"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
