@@ -152,10 +152,10 @@ func main() {
 	e.Use(middleware.Recover())
 
 	// 靜態檔
-	e.Static("/", "index.html")
-	e.Static("/js", "js")
-	e.Static("/css", "css")
-	e.Static("/icon", "icon")
+	e.Static("/", "./web/index.html")
+	e.Static("/js", "./web/js")
+	e.Static("/css", "./web/css")
+	e.Static("/icon", "./web/icon")
 
 	// websocket
 	e.GET("/ws", websocketStart)
